@@ -1,59 +1,112 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Flash-Sale Checkout API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Tech Stack:** Laravel 12, MySQL (InnoDB), Laravel Cache (any driver)  
+**Purpose:** Handle flash-sale product checkout safely under high concurrency.  
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Assumptions & Invariants
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Single product** seeded with finite stock.  
+- **Holds:**  
+  - Temporary (~2 minutes).  
+  - Reduce available stock immediately.  
+  - Expired holds auto-release stock.  
+- **Orders:**  
+  - Only valid, unexpired holds can create orders.  
+  - Each hold can be used once.  
+- **Payment Webhook:**  
+  - Idempotent: same `idempotency_key` cannot be applied twice.  
+  - Safe if received before order creation (returns 202 until order exists).  
+- **Concurrency:**  
+  - Parallel hold requests must not oversell.  
+  - Atomic stock adjustments simulated in tests.  
+- **Data integrity:**  
+  - Stock never goes negative.  
+  - Holds and orders maintain consistency.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 2. How to Run Locally
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+1. Clone the repository:  
+```bash
+git clone <repo-url>
+cd flash-sale
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-## Laravel Sponsors
+Install dependencies:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+composer install
 
-### Premium Partners
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Configure .env file:
 
-## Contributing
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=flash_sale
+DB_USERNAME=root
+DB_PASSWORD=
+CACHE_DRIVER=file
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## Code of Conduct
+Run migrations & seeders:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+php artisan migrate --seed
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Start Laravel server:
 
-## License
+php artisan serve
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+Run tests (parallel-safe):
+
+php artisan test --parallel
+
+3. API Endpoints
+Endpoint	Method	Description
+/api/products/{id}	GET	Get product info + accurate available stock
+/api/holds	POST	Create temporary hold {product_id, qty}
+/api/orders	POST	Create order from valid hold {hold_id}
+/api/payments/webhook	POST	Idempotent payment update, out-of-order safe
+4. Automated Tests
+
+Parallel Hold Requests
+
+Simulate multiple concurrent holds at stock boundary.
+
+Assert only one hold succeeds, no oversell.
+
+Hold Expiry Returns Stock
+
+Create hold, decrement stock.
+
+Fast-forward time and run cleanup.
+
+Assert stock restored and hold deleted.
+
+Webhook Idempotency
+
+Same webhook key dispatched multiple times.
+
+Assert order updated once, stock not double-changed.
+
+Webhook Before Order Creation
+
+Webhook arrives before order exists.
+
+Returns 202 initially, then 200 after order creation.
+
+Asserts final order and payment state correct.
+
+5. Logs & Metrics
+
+Logs: Laravel default logs in storage/logs/laravel.log.
+
+Metrics / Debug:
+
+Database records (orders, holds, payment_webhooks) show system behavior.
+
+Parallel hold attempts and webhook handling can be traced via tests.
