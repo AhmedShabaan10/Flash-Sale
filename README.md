@@ -1,6 +1,6 @@
 # Flash-Sale Checkout API 🚀
 
-**Tech Stack:** Laravel 12, MySQL (InnoDB), Laravel Cache (any driver)  
+**Tech Stack:** Laravel 12, MySQL (InnoDB), Laravel Cache
 **Purpose:** Handle flash-sale product checkout safely under high concurrency. 💳
 
 ---
@@ -42,13 +42,7 @@ composer install
 
 3. Configure `.env` file:
 ```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=flash_sale
-DB_USERNAME=root
-DB_PASSWORD=
-CACHE_DRIVER=file
+copy .env.example as .env
 ```
 
 4. Run migrations & seeders:
@@ -66,16 +60,21 @@ php artisan serve
 php artisan test --parallel
 ```
 
+
+7. Run background job:
+```bash
+php artisan schedule:work
+```
 ---
 
 ## 3. API Endpoints 📡
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/products/{id}` | GET | Get product info + available stock |
-| `/api/holds` | POST | Create temporary hold `{product_id, qty}` |
-| `/api/orders` | POST | Create order from valid hold `{hold_id}` |
-| `/api/payments/webhook` | POST | Idempotent payment update |
+| Endpoint                | Method | Description                                                                                    |
+| ----------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `/api/products/{id}`    | GET    | Get product info + available stock                                                             |
+| `/api/holds`            | POST   | Create temporary hold `{product_id, qty}`                                                      |
+| `/api/orders`           | POST   | Create order from valid hold `{hold_id}`                                                       |
+| `/api/payments/webhook` | POST   | Idempotent payment update `{idempotency_key , order_number , status : (success,failed) ,amount}` |
 
 ---
 
