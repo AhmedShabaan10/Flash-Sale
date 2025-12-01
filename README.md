@@ -1,15 +1,15 @@
-# Flash-Sale Checkout API
+# Flash-Sale Checkout API 🚀
 
 **Tech Stack:** Laravel 12, MySQL (InnoDB), Laravel Cache (any driver)  
-**Purpose:** Handle flash-sale product checkout safely under high concurrency.  
+**Purpose:** Handle flash-sale product checkout safely under high concurrency. 💳
 
 ---
 
-## 1. Assumptions & Invariants
+## 1. Assumptions & Invariants 🔍
 
 - **Single product** seeded with finite stock.  
 - **Holds:**  
-    - Temporary (~2 minutes).  
+    - Temporary (~2 minutes). ⏳  
     - Reduce available stock immediately.  
     - Expired holds auto-release stock.  
 - **Orders:**  
@@ -27,11 +27,11 @@
 
 ---
 
-## 2. How to Run Locally
+## 2. How to Run Locally 🛠️
 
 1. Clone the repository:  
 ```bash
-git clone <repo-url>
+git clone https://github.com/AhmedShabaan10/Flash-Sale.git
 cd flash-sale
 ```
 
@@ -68,7 +68,7 @@ php artisan test --parallel
 
 ---
 
-## 3. API Endpoints
+## 3. API Endpoints 📡
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -79,7 +79,7 @@ php artisan test --parallel
 
 ---
 
-## 4. Automated Tests
+## 4. Automated Tests 🧪
 
 - **Parallel Hold Requests:** Simulate concurrent holds at stock boundary; assert only one succeeds.
 - **Hold Expiry Returns Stock:** Verify stock restoration after hold expiration.
@@ -88,8 +88,9 @@ php artisan test --parallel
 
 ---
 
-## 5. Logs & Metrics
+## 5. Logs & Metrics 📊
 
 - **Logs:** Laravel default logs in `storage/logs/laravel.log`
 - **Database records:** Track orders, holds, and payment_webhooks
 - **Parallel hold attempts and webhook handling:** Traced via tests
+
